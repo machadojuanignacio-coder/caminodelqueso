@@ -4,7 +4,7 @@ Juego de programación para nivel inicial. Se colocan flechas en los casilleros 
 
 - Se juega en **celular, tablet o computadora**, en vertical u horizontal.
 - Se puede **ver en grande en la TV**: el celular queda como control y la TV muestra el tablero, con sonido.
-- 8 niveles, de 3×3 a 6×6, con piedras como obstáculos.
+- 14 niveles: 8 de práctica (3×3 a 6×6, con más de un camino posible) y 6 difíciles 🔥 (6×6 a 8×8, laberintos con un solo camino y pasillos sin salida).
 - Se puede **instalar como app** ("Agregar a pantalla de inicio") y jugar sin internet.
 
 ## Publicarlo en GitHub Pages (desde la computadora)

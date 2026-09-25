@@ -1,6 +1,6 @@
 // El camino del queso: guarda el juego para que abra rápido y funcione sin internet.
 // Al publicar una versión nueva, cambiá el número de VERSION.
-const VERSION = 'camino-v1';
+const VERSION = 'camino-v2';
 const ARCHIVOS = [
   './', './index.html', './tv.html', './manifest.webmanifest',
   './peerjs.min.js', './qrcode.js',
