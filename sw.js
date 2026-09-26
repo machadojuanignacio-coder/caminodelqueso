@@ -1,6 +1,6 @@
 // Programamos jugando: guarda los juegos para que abra rápido y funcione sin internet.
 // Al publicar una versión nueva o sumar un juego, cambiá VERSION y agregá sus archivos a la lista.
-const VERSION = 'juegos-v4';
+const VERSION = 'juegos-v5';
 const ARCHIVOS = [
   './', './index.html', './juegos.js', './camino.html', './tv.html', './manifest.webmanifest',
   './peerjs.min.js', './qrcode.js',

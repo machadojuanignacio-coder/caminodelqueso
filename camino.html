@@ -128,7 +128,7 @@
   .arrow{ position:absolute; inset:8%; display:none; z-index:1; }
   .cell.has-arrow .arrow{ display:block; }
   .arrow .pw{ display:block; width:100%; height:100%; }
-  .arrow svg{ width:100%; height:100%; display:block; transform:rotate(var(--rot,0deg)); }
+  .arrow svg{ width:100%; height:100%; display:block; transform:rotate(var(--rot,0deg)) scaleX(var(--flip,1)); }
   .cell.under .arrow{
     z-index:6; background:#FFFFFF; border-radius:50%; padding:9%;
     box-shadow:0 2px 0 rgba(0,0,0,.22);
@@ -160,7 +160,7 @@
     display:grid;
     grid-template-columns:repeat(3, var(--tb,60px));
     grid-template-rows:repeat(3, var(--tb,60px));
-    grid-template-areas:". up ." "left erase right" ". down .";
+    grid-template-areas:"tl up tr" "left erase right" ". down .";
     gap:var(--g,8px);
   }
   .tool{
@@ -174,6 +174,8 @@
   .tool[data-tool="left"]{ grid-area:left; }
   .tool[data-tool="right"]{ grid-area:right; }
   .tool[data-tool="erase"]{ grid-area:erase; background:var(--panel); }
+  .tool[data-tool="tl"]{ grid-area:tl; background:#E7DCFB; }
+  .tool[data-tool="tr"]{ grid-area:tr; background:#E7DCFB; }
   .tool.sel{ box-shadow:0 0 0 4px var(--ink), var(--shadow); }
   .tools.hint .tool{ animation:shake .4s ease; }
   .play{
@@ -348,6 +350,8 @@
           <button class="tool" data-tool="down" aria-label="Flecha abajo"></button>
           <button class="tool" data-tool="right" aria-label="Flecha derecha"></button>
           <button class="tool erase" data-tool="erase" aria-label="Goma para borrar una flecha"></button>
+          <button class="tool turn" data-tool="tl" aria-label="Girar a la izquierda"></button>
+          <button class="tool turn" data-tool="tr" aria-label="Girar a la derecha"></button>
         </div>
         <button class="play" id="playBtn" aria-label="Jugar"></button>
       </div>
@@ -426,6 +430,45 @@
     left:  { dr:0,  dc:-1, rot:270, tx:'-34%', ty:'0%'   }
   };
   var NUM = ['up','right','down','left'];
+
+  /* ---------- Flechas de girar ----------
+     tl = girar a la izquierda, tr = girar a la derecha.
+     El ratón gira según hacia dónde está mirando y avanza un casillero. */
+  function isTurn(d){ return d === 'tl' || d === 'tr'; }
+  function headingOf(rot){ return NUM[((Math.round(rot / 90) % 4) + 4) % 4]; }
+  function turnDir(h, side){ return NUM[(NUM.indexOf(h) + (side === 'tr' ? 1 : 3)) % 4]; }
+  var CODE = { up:'u', right:'r', down:'d', left:'l', tl:'L', tr:'R' };
+  // hacia dónde mira el ratón al llegar a cada casillero (para dibujar las flechas de girar como se ven de verdad)
+  function arrivals(L, arrows, rocks){
+    var m0 = L.mice[0], r = m0[0], c = m0[1], h = NUM[m0[2]], res = {}, n = 0;
+    while(n++ <= L.rows * L.cols){
+      var k = key(r, c);
+      if(k in res) break;
+      res[k] = h;
+      var d = arrows[k]; if(!d) break;
+      var nh = isTurn(d) ? turnDir(h, d) : d;
+      var nr = r + DIRS[nh].dr, nc = c + DIRS[nh].dc;
+      if(nr < 0 || nc < 0 || nr >= L.rows || nc >= L.cols || rocks[key(nr, nc)]) break;
+      if(L.cheese[0] === nr && L.cheese[1] === nc) break;
+      r = nr; c = nc; h = nh;
+    }
+    return res;
+  }
+  // flecha curva: llega desde abajo, gira a la derecha (la izquierda es el espejo)
+  function turnSVG(side){
+    return '<svg viewBox="0 0 100 100" aria-hidden="true"' + (side === 'tl' ? ' style="transform:scaleX(-1)"' : '') + '>' +
+      '<path d="M34 92 L34 52 C34 36 45 28 60 28 L64 28 L64 12 L92 41 L64 70 L64 54 L62 54 C60 54 58 56 58 58 L58 92 Z" fill="#8E5BD8" stroke="#5B2E9E" stroke-width="5" stroke-linejoin="round"/></svg>';
+  }
+  function toolIcon(t){ return t === 'erase' ? eraserSVG() : (isTurn(t) ? turnSVG(t) : arrowSVG(DIRS[t].rot)); }
+  function paintArrow(a, d, inH){
+    var turn = isTurn(d), pw = a.querySelector('.pw'), kind = turn ? 'turn' : 'str';
+    if(a.dataset.kind !== kind){ pw.innerHTML = turn ? turnSVG() : arrowSVG(); a.dataset.kind = kind; }
+    var h = turn ? (inH || 'up') : d, out = turn ? turnDir(h, d) : d;
+    a.style.setProperty('--rot', DIRS[h].rot + 'deg');
+    a.style.setProperty('--flip', d === 'tl' ? -1 : 1);
+    a.style.setProperty('--tx', DIRS[out].tx);
+    a.style.setProperty('--ty', DIRS[out].ty);
+  }
   var COLORS = [['#C08A5C','#6B4529'], ['#AEB4BC','#5F656D'], ['#F4EFE6','#9C8F7B']];
 
   // cheese:[fila,col]  walls:[[fila,col]]  mice:[[fila,col,mirada 0↑ 1→ 2↓ 3←]]
@@ -721,15 +764,12 @@
     if(!a) return;
     var d = S.arrows[k];
     el.classList.toggle('has-arrow', !!d);
-    if(d){
-      a.style.setProperty('--rot', DIRS[d].rot + 'deg');
-      a.style.setProperty('--tx', DIRS[d].tx);
-      a.style.setProperty('--ty', DIRS[d].ty);
-    }
+    if(d) paintArrow(a, d, S.arr && S.arr[k]);
     el.classList.toggle('under', !!d && mouseAt(r,c) >= 0);
   }
   function renderAll(){
     if(!S.lvl) return;
+    S.arr = arrivals(S.lvl, S.arrows, S.rocks);
     for(var r = 0; r < S.lvl.rows; r++) for(var c = 0; c < S.lvl.cols; c++) renderCell(r,c);
     S.mice.forEach(function(m, i){
       m.el.classList.toggle('gone', m.fed);
@@ -771,7 +811,7 @@
   var toolBtns = Array.prototype.slice.call(toolsEl.querySelectorAll('.tool'));
   toolBtns.forEach(function(btn){
     var t = btn.getAttribute('data-tool');
-    btn.innerHTML = (t === 'erase') ? eraserSVG() : arrowSVG(DIRS[t].rot);
+    btn.innerHTML = toolIcon(t);
   });
   playBtn.innerHTML = playSVG();
 
@@ -824,7 +864,7 @@
           ghost = document.createElement('div');
           ghost.className = 'ghost';
           ghost.style.setProperty('--gs', Math.max(52, S.cell) + 'px');
-          ghost.innerHTML = (t === 'erase') ? eraserSVG() : arrowSVG(DIRS[t].rot);
+          ghost.innerHTML = toolIcon(t);
           document.body.appendChild(ghost);
         }
         if(ghost){
@@ -905,6 +945,7 @@
       markReading(m.r, m.c);
       if(!d) return fail('falta', m.r, m.c);
       if(++steps > S.lvl.rows * S.lvl.cols) return fail('vueltas', m.r, m.c);
+      if(isTurn(d)) d = turnDir(headingOf(m.rot), d);   // gira según hacia dónde mira
       face(m, d);
       var nr = m.r + DIRS[d].dr, nc = m.c + DIRS[d].dc;
       var out = nr < 0 || nc < 0 || nr >= S.lvl.rows || nc >= S.lvl.cols;
@@ -1023,7 +1064,7 @@
      ===================================================== */
   var ROLE = null;          // 'ctl' | 'tv'
   var lastPub = '';
-  var LETTER = { u:'up', r:'right', d:'down', l:'left' };
+  var LETTER = { u:'up', r:'right', d:'down', l:'left', L:'tl', R:'tr' };
 
   // El control manda el estado del juego a la TV
   function publish(){
@@ -1033,7 +1074,7 @@
       var ar = '';
       Object.keys(S.arrows).forEach(function(k){
         var p = k.split(',');
-        ar += p[0] + p[1] + S.arrows[k].charAt(0);
+        ar += p[0] + p[1] + CODE[S.arrows[k]];
       });
       var m = S.mice[0];
       st.lv = S.li; st.ar = ar;
@@ -1182,6 +1223,7 @@
       var r = num(ar.charAt(i), 0, L.rows - 1), c = num(ar.charAt(i+1), 0, L.cols - 1), d = LETTER[ar.charAt(i+2)];
       if(r !== null && c !== null && d) arrows[key(r,c)] = d;
     }
+    var tvArr = arrivals(L, arrows, TV.rocks);
     var m = Array.isArray(st.m) ? st.m : [];
     var mr = num(m[0], 0, L.rows - 1), mc = num(m[1], 0, L.cols - 1), rot = num(m[2], -100000, 100000);
     if(mr === null) mr = L.mice[0][0];
@@ -1204,9 +1246,7 @@
         var dd = arrows[k];
         el.classList.toggle('has-arrow', !!dd);
         if(dd){
-          a.style.setProperty('--rot', DIRS[dd].rot + 'deg');
-          a.style.setProperty('--tx', DIRS[dd].tx);
-          a.style.setProperty('--ty', DIRS[dd].ty);
+          paintArrow(a, dd, tvArr[k]);
           if(prev && prev.arrows[k] !== dd){
             var pw = a.querySelector('.pw');
             pw.classList.remove('pop'); void pw.offsetWidth; pw.classList.add('pop');
