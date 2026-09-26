@@ -1,17 +1,30 @@
 {
-  "name": "El camino del queso",
-  "short_name": "Camino del queso",
-  "description": "Juego de programación con flechas para nivel inicial.",
+  "name": "Programamos jugando",
+  "short_name": "Programamos",
+  "description": "Juegos de programación con flechas para nivel inicial.",
   "lang": "es-AR",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#CDEBF5",
-  "theme_color": "#4FAF77",
+  "background_color": "#D9ECFF",
+  "theme_color": "#2F63B5",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

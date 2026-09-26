@@ -1,11 +1,13 @@
-// El camino del queso: guarda el juego para que abra rápido y funcione sin internet.
-// Al publicar una versión nueva, cambiá el número de VERSION.
-const VERSION = 'camino-v2';
+// Programamos jugando: guarda los juegos para que abra rápido y funcione sin internet.
+// Al publicar una versión nueva o sumar un juego, cambiá VERSION y agregá sus archivos a la lista.
+const VERSION = 'juegos-v4';
 const ARCHIVOS = [
-  './', './index.html', './tv.html', './manifest.webmanifest',
+  './', './index.html', './juegos.js', './camino.html', './tv.html', './manifest.webmanifest',
   './peerjs.min.js', './qrcode.js',
   './baloo2-600.woff2', './baloo2-800.woff2',
-  './icon-192.png', './icon-512.png', './icon-maskable-512.png'
+  './icon-192.png', './icon-512.png', './icon-maskable-512.png',
+  './azules.html', './azules-tv.html',
+  './azules-192.png', './azules-512.png', './azules-maskable-512.png'
 ];
 
 self.addEventListener('install', (e) => {
