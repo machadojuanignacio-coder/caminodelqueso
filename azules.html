@@ -192,9 +192,9 @@
   #game.land .dock{ flex-direction:column; padding:6px 14px 12px 6px; }
   .tools{
     display:grid;
-    grid-template-columns:repeat(3, var(--tb,60px));
-    grid-template-rows:repeat(3, var(--tb,60px));
-    grid-template-areas:"cu up cr" "left erase right" "cl down cd";
+    grid-template-columns:repeat(5, var(--tb,60px));
+    grid-template-rows:repeat(4, var(--tb,60px));
+    grid-template-areas:". up . cA cB" "left erase right cC cD" ". down . cE cF" "play play play cG cH";
     gap:var(--g,8px);
   }
   .tool{
@@ -208,10 +208,12 @@
   .tool[data-tool="left"]{ grid-area:left; }
   .tool[data-tool="right"]{ grid-area:right; }
   .tool[data-tool="erase"]{ grid-area:erase; background:var(--panel); }
-  .tool[data-tool="cu"]{ grid-area:cu; background:#E7DCFB; }
-  .tool[data-tool="cr"]{ grid-area:cr; background:#E7DCFB; }
-  .tool[data-tool="cd"]{ grid-area:cd; background:#E7DCFB; }
-  .tool[data-tool="cl"]{ grid-area:cl; background:#E7DCFB; }
+  .tool.turn{ background:#E7DCFB; }
+  .tool[data-tool="cRU"]{ grid-area:cA; } .tool[data-tool="cLU"]{ grid-area:cB; }
+  .tool[data-tool="cUR"]{ grid-area:cC; } .tool[data-tool="cDR"]{ grid-area:cD; }
+  .tool[data-tool="cRD"]{ grid-area:cE; } .tool[data-tool="cLD"]{ grid-area:cF; }
+  .tool[data-tool="cUL"]{ grid-area:cG; } .tool[data-tool="cDL"]{ grid-area:cH; }
+  #game .tools .play{ grid-area:play; width:auto; height:auto; }
   .tool.sel{ box-shadow:0 0 0 4px var(--ink), var(--shadow); }
   .tools.hint .tool{ animation:shake .4s ease; }
   .play{
@@ -406,12 +408,16 @@
           <button class="tool" data-tool="down" aria-label="Flecha abajo"></button>
           <button class="tool" data-tool="right" aria-label="Flecha derecha"></button>
           <button class="tool erase" data-tool="erase" aria-label="Goma para borrar una flecha"></button>
-          <button class="tool turn" data-tool="cu" aria-label="Doblar hacia arriba"></button>
-          <button class="tool turn" data-tool="cr" aria-label="Doblar hacia la derecha"></button>
-          <button class="tool turn" data-tool="cd" aria-label="Doblar hacia abajo"></button>
-          <button class="tool turn" data-tool="cl" aria-label="Doblar hacia la izquierda"></button>
+          <button class="tool turn" data-tool="cRU" aria-label="Viene hacia la derecha y dobla hacia arriba"></button>
+          <button class="tool turn" data-tool="cLU" aria-label="Viene hacia la izquierda y dobla hacia arriba"></button>
+          <button class="tool turn" data-tool="cUR" aria-label="Viene subiendo y dobla a la derecha"></button>
+          <button class="tool turn" data-tool="cDR" aria-label="Viene bajando y dobla a la derecha"></button>
+          <button class="tool turn" data-tool="cRD" aria-label="Viene hacia la derecha y dobla hacia abajo"></button>
+          <button class="tool turn" data-tool="cLD" aria-label="Viene hacia la izquierda y dobla hacia abajo"></button>
+          <button class="tool turn" data-tool="cUL" aria-label="Viene subiendo y dobla a la izquierda"></button>
+          <button class="tool turn" data-tool="cDL" aria-label="Viene bajando y dobla a la izquierda"></button>
+          <button class="play" id="playBtn" aria-label="Jugar"></button>
         </div>
-        <button class="play" id="playBtn" aria-label="Jugar"></button>
       </div>
     </div>
   </section>
@@ -492,17 +498,20 @@
   };
   var NUM = ['up','right','down','left'];
 
-  /* ---------- Flechas curvas (doblar) ----------
-     cu / cr / cd / cl = doblar hacia arriba / derecha / abajo / izquierda.
-     Como las rectas: el ratón sale hacia donde apunta la punta, mire hacia donde mire.
-     En el tablero la curva se dibuja desde el lado por donde llega el ratón, para que se vea el camino continuo. */
-  var CURVE_OUT = { cu:'up', cr:'right', cd:'down', cl:'left' };
-  var CURVE_IN0 = { cu:'right', cr:'up', cd:'right', cl:'down' };   // cómo se ve cuando todavía no se sabe por dónde llega
+  /* ---------- Flechas curvas: 8, una por cada giro ----------
+     Cada una se ve siempre igual: de dónde viene y hacia dónde dobla.
+     El ratón sale hacia donde apunta la punta (igual que las flechas rectas). */
+  var CURVES = {   // [viene moviéndose hacia, dobla hacia]
+    cRU:['right','up'],  cLU:['left','up'],
+    cUR:['up','right'],  cDR:['down','right'],
+    cRD:['right','down'], cLD:['left','down'],
+    cUL:['up','left'],   cDL:['down','left']
+  };
   var OPP = { up:'down', down:'up', left:'right', right:'left' };
-  function isTurn(d){ return !!CURVE_OUT[d]; }
-  function exitOf(d){ return CURVE_OUT[d] || d; }
+  function isTurn(d){ return !!CURVES[d]; }
+  function exitOf(d){ return CURVES[d] ? CURVES[d][1] : d; }
   function headingOf(rot){ return NUM[((Math.round(rot / 90) % 4) + 4) % 4]; }
-  var CODE = { up:'u', right:'r', down:'d', left:'l', cu:'U', cr:'R', cd:'D', cl:'L' };
+  var CODE = { up:'u', right:'r', down:'d', left:'l', cRU:'a', cLU:'b', cUR:'c', cDR:'e', cRD:'f', cLD:'g', cUL:'h', cDL:'i' };
   // hacia dónde viene el ratón al llegar a cada casillero (para dibujar las curvas)
   function arrivals(L, arrows, rocks){
     var m0 = L.mice[0], r = m0[0], c = m0[1], h = NUM[m0[2]], res = {}, n = 0;
@@ -529,10 +538,9 @@
     }
     return null;
   }
-  // rotación y espejo de la curva base (llega subiendo y dobla a la derecha)
-  function curvePose(d, inH){
-    var out = exitOf(d), h = inH;
-    if(!h || h === out || h === OPP[out]) h = CURVE_IN0[d];
+  // rotación y espejo de la curva base (llega subiendo y dobla a la derecha): siempre la misma para cada flecha
+  function curvePose(d){
+    var h = CURVES[d][0], out = CURVES[d][1];
     return { rot: DIRS[h].rot, flip: NUM[(NUM.indexOf(h) + 1) % 4] === out ? 1 : -1, out: out };
   }
   function turnSVG(pose){
@@ -543,7 +551,7 @@
   function paintArrow(a, d, inH){
     var turn = isTurn(d), pw = a.querySelector('.pw'), kind = turn ? 'turn' : 'str';
     if(a.dataset.kind !== kind){ pw.innerHTML = turn ? turnSVG() : arrowSVG(); a.dataset.kind = kind; }
-    var pose = turn ? curvePose(d, inH) : { rot: DIRS[d].rot, flip: 1, out: d };
+    var pose = turn ? curvePose(d) : { rot: DIRS[d].rot, flip: 1, out: d };
     a.style.setProperty('--rot', pose.rot + 'deg');
     a.style.setProperty('--flip', pose.flip);
     a.style.setProperty('--tx', DIRS[pose.out].tx);
@@ -866,10 +874,10 @@
     var topH = 62 + ($('tray').offsetHeight || 58), tb;
     if(!land){
       // cruz (3 botones) + play (1,7) en una fila; que no ocupe más de ~40% del alto
-      tb = Math.min(96, (W - 24 - 4.5*g) / 4.75, (H - topH) * 0.12);
+      tb = Math.min(96, (W - 24 - 4*g) / 5, (H - topH) * 0.10);
     } else {
       // cruz arriba + play abajo, en una columna al costado
-      tb = Math.min(96, (H - topH - 24 - 4.5*g) / 4.15, W * 0.1);
+      tb = Math.min(96, (H - topH - 24 - 3*g) / 4, W * 0.075);
     }
     tb = Math.max(38, Math.floor(tb));
     game.style.setProperty('--tb', tb + 'px');
@@ -1100,19 +1108,20 @@
     S.running = true; S.errKey = null; S.errType = null; S.phase = 'run';
     resetItems();
     setRunningUI(true); renderAll();
-    var steps = 0;
+    var steps = 0, inH = null;   // inH: hacia dónde venía moviéndose (null en el casillero de salida)
     function step(){
       var d = S.arrows[key(m.r, m.c)];
       markReading(m.r, m.c);
       if(!d) return fail('falta', m.r, m.c);
       if(++steps > S.lvl.rows * S.lvl.cols) return fail('vueltas', m.r, m.c);
-      d = exitOf(d);   // curvas: sale hacia donde apunta la punta
+      if(isTurn(d) && inH && CURVES[d][0] !== inH){ bump(m, inH); return fail('curva', m.r, m.c); }   // la cola no coincide con el camino
+      d = exitOf(d);   // sale hacia donde apunta la punta
       face(m, d);
       var nr = m.r + DIRS[d].dr, nc = m.c + DIRS[d].dc;
       var out = nr < 0 || nc < 0 || nr >= S.lvl.rows || nc >= S.lvl.cols;
       if(out){ bump(m, d); return fail('afuera', m.r, m.c); }
       if(S.rocks[key(nr, nc)]){ bump(m, d); return fail('piedra', nr, nc); }
-      m.r = nr; m.c = nc;
+      m.r = nr; m.c = nc; inH = d;
       setPos(m.el, nr, nc);
       sndStep();
       collect(nr, nc);
@@ -1131,6 +1140,7 @@
 
   var FAIL_TXT = {
     falta:   ['❓', 'Le faltó una flecha'],
+    curva:   ['🧩', 'Esa curva no encaja'],
     piedra:  ['🧱', '¡Chocó con un bloque!'],
     afuera:  ['🚧', 'Se salió del camino'],
     vueltas: ['🌀', 'Dio vueltas y vueltas'],
@@ -1255,7 +1265,7 @@
      ===================================================== */
   var ROLE = null;          // 'ctl' | 'tv'
   var lastPub = '';
-  var LETTER = { u:'up', r:'right', d:'down', l:'left', U:'cu', R:'cr', D:'cd', L:'cl' };
+  var LETTER = { u:'up', r:'right', d:'down', l:'left', a:'cRU', b:'cLU', c:'cUR', e:'cDR', f:'cRD', g:'cLD', h:'cUL', i:'cDL' };
 
   // El control manda el estado del juego a la TV
   function publish(){

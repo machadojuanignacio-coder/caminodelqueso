@@ -4,7 +4,7 @@ Juegos de programación con flechas para nivel inicial (Sala de 5). Se juegan en
 
 Al abrir el sitio aparece la lista de juegos para elegir.
 
-**Flechas:** 4 rectas (arriba, abajo, izquierda, derecha) y 4 curvas para doblar en violeta, en las esquinas de la cruz. Todas funcionan igual: el ratón sale hacia donde apunta la punta, mire hacia donde mire. En el tablero la curva se dibuja desde el lado por donde llega el ratón, así el camino siempre se ve continuo (por ejemplo, si baja y dobla a la derecha se ve ↳).
+**Flechas:** 4 rectas (arriba, abajo, izquierda, derecha) y 8 curvas en violeta, una por cada giro posible. Cada curva muestra de dónde viene y hacia dónde dobla, y se ve siempre igual: lo que está en el botón es lo que queda en el tablero. El ratón sale hacia donde apunta la punta. Si la cola de la curva no coincide con el lado por donde llega el ratón, aparece el aviso **"Esa curva no encaja"** para buscar la correcta (en el casillero donde arranca el ratón cualquier curva vale).
 
 | Juego | Qué trabaja |
 |---|---|
@@ -40,7 +40,7 @@ Requisitos: los dos aparatos con internet (mejor en el mismo Wi-Fi) y un navegad
 1. Subí el archivo del juego (por ejemplo `nuevo.html`, armado sobre la base de `camino.html`) y su ícono.
 2. Dentro del juego, poné `var GAME_ID = 'nuevo';`.
 3. En `juegos.js`, agregá una línea a la lista con `id`, `pagina`, `titulo`, `que`, `icono` y `color`. Aparece solo en la página de inicio, y la TV sabe cambiar a ese juego.
-4. En `sw.js`, agregá los archivos nuevos a la lista y cambiá `VERSION` (por ejemplo `juegos-v7`) para que los aparatos que lo tienen instalado se actualicen.
+4. En `sw.js`, agregá los archivos nuevos a la lista y cambiá `VERSION` (por ejemplo `juegos-v8`) para que los aparatos que lo tienen instalado se actualicen.
 
 ## Archivos
 
