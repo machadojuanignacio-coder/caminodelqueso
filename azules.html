@@ -194,7 +194,7 @@
     display:grid;
     grid-template-columns:repeat(3, var(--tb,60px));
     grid-template-rows:repeat(3, var(--tb,60px));
-    grid-template-areas:"tl up tr" "left erase right" ". down .";
+    grid-template-areas:"cu up cr" "left erase right" "cl down cd";
     gap:var(--g,8px);
   }
   .tool{
@@ -208,8 +208,10 @@
   .tool[data-tool="left"]{ grid-area:left; }
   .tool[data-tool="right"]{ grid-area:right; }
   .tool[data-tool="erase"]{ grid-area:erase; background:var(--panel); }
-  .tool[data-tool="tl"]{ grid-area:tl; background:#E7DCFB; }
-  .tool[data-tool="tr"]{ grid-area:tr; background:#E7DCFB; }
+  .tool[data-tool="cu"]{ grid-area:cu; background:#E7DCFB; }
+  .tool[data-tool="cr"]{ grid-area:cr; background:#E7DCFB; }
+  .tool[data-tool="cd"]{ grid-area:cd; background:#E7DCFB; }
+  .tool[data-tool="cl"]{ grid-area:cl; background:#E7DCFB; }
   .tool.sel{ box-shadow:0 0 0 4px var(--ink), var(--shadow); }
   .tools.hint .tool{ animation:shake .4s ease; }
   .play{
@@ -404,8 +406,10 @@
           <button class="tool" data-tool="down" aria-label="Flecha abajo"></button>
           <button class="tool" data-tool="right" aria-label="Flecha derecha"></button>
           <button class="tool erase" data-tool="erase" aria-label="Goma para borrar una flecha"></button>
-          <button class="tool turn" data-tool="tl" aria-label="Girar a la izquierda"></button>
-          <button class="tool turn" data-tool="tr" aria-label="Girar a la derecha"></button>
+          <button class="tool turn" data-tool="cu" aria-label="Doblar hacia arriba"></button>
+          <button class="tool turn" data-tool="cr" aria-label="Doblar hacia la derecha"></button>
+          <button class="tool turn" data-tool="cd" aria-label="Doblar hacia abajo"></button>
+          <button class="tool turn" data-tool="cl" aria-label="Doblar hacia la izquierda"></button>
         </div>
         <button class="play" id="playBtn" aria-label="Jugar"></button>
       </div>
@@ -488,14 +492,18 @@
   };
   var NUM = ['up','right','down','left'];
 
-  /* ---------- Flechas de girar ----------
-     tl = girar a la izquierda, tr = girar a la derecha.
-     El ratón gira según hacia dónde está mirando y avanza un casillero. */
-  function isTurn(d){ return d === 'tl' || d === 'tr'; }
+  /* ---------- Flechas curvas (doblar) ----------
+     cu / cr / cd / cl = doblar hacia arriba / derecha / abajo / izquierda.
+     Como las rectas: el ratón sale hacia donde apunta la punta, mire hacia donde mire.
+     En el tablero la curva se dibuja desde el lado por donde llega el ratón, para que se vea el camino continuo. */
+  var CURVE_OUT = { cu:'up', cr:'right', cd:'down', cl:'left' };
+  var CURVE_IN0 = { cu:'right', cr:'up', cd:'right', cl:'down' };   // cómo se ve cuando todavía no se sabe por dónde llega
+  var OPP = { up:'down', down:'up', left:'right', right:'left' };
+  function isTurn(d){ return !!CURVE_OUT[d]; }
+  function exitOf(d){ return CURVE_OUT[d] || d; }
   function headingOf(rot){ return NUM[((Math.round(rot / 90) % 4) + 4) % 4]; }
-  function turnDir(h, side){ return NUM[(NUM.indexOf(h) + (side === 'tr' ? 1 : 3)) % 4]; }
-  var CODE = { up:'u', right:'r', down:'d', left:'l', tl:'L', tr:'R' };
-  // hacia dónde mira el ratón al llegar a cada casillero (para dibujar las flechas de girar como se ven de verdad)
+  var CODE = { up:'u', right:'r', down:'d', left:'l', cu:'U', cr:'R', cd:'D', cl:'L' };
+  // hacia dónde viene el ratón al llegar a cada casillero (para dibujar las curvas)
   function arrivals(L, arrows, rocks){
     var m0 = L.mice[0], r = m0[0], c = m0[1], h = NUM[m0[2]], res = {}, n = 0;
     while(n++ <= L.rows * L.cols){
@@ -503,7 +511,7 @@
       if(k in res) break;
       res[k] = h;
       var d = arrows[k]; if(!d) break;
-      var nh = isTurn(d) ? turnDir(h, d) : d;
+      var nh = exitOf(d);
       var nr = r + DIRS[nh].dr, nc = c + DIRS[nh].dc;
       if(nr < 0 || nc < 0 || nr >= L.rows || nc >= L.cols || rocks[key(nr, nc)]) break;
       if(L.cheese[0] === nr && L.cheese[1] === nc) break;
@@ -511,21 +519,37 @@
     }
     return res;
   }
-  // flecha curva: llega desde abajo, gira a la derecha (la izquierda es el espejo)
-  function turnSVG(side){
-    return '<svg viewBox="0 0 100 100" aria-hidden="true"' + (side === 'tl' ? ' style="transform:scaleX(-1)"' : '') + '>' +
+  // si el ratón todavía no llega, mirar si alguna flecha vecina apunta hacia este casillero
+  function neighborIn(L, arrows, r, c){
+    for(var i = 0; i < 4; i++){
+      var dir = NUM[i], nr = r - DIRS[dir].dr, nc = c - DIRS[dir].dc;
+      if(nr < 0 || nc < 0 || nr >= L.rows || nc >= L.cols) continue;
+      var nd = arrows[key(nr, nc)];
+      if(nd && exitOf(nd) === dir) return dir;
+    }
+    return null;
+  }
+  // rotación y espejo de la curva base (llega subiendo y dobla a la derecha)
+  function curvePose(d, inH){
+    var out = exitOf(d), h = inH;
+    if(!h || h === out || h === OPP[out]) h = CURVE_IN0[d];
+    return { rot: DIRS[h].rot, flip: NUM[(NUM.indexOf(h) + 1) % 4] === out ? 1 : -1, out: out };
+  }
+  function turnSVG(pose){
+    return '<svg viewBox="0 0 100 100" aria-hidden="true"' + (pose ? ' style="transform:rotate(' + pose.rot + 'deg) scaleX(' + pose.flip + ')"' : '') + '>' +
       '<path d="M34 92 L34 52 C34 36 45 28 60 28 L64 28 L64 12 L92 41 L64 70 L64 54 L62 54 C60 54 58 56 58 58 L58 92 Z" fill="#8E5BD8" stroke="#5B2E9E" stroke-width="5" stroke-linejoin="round"/></svg>';
   }
-  function toolIcon(t){ return t === 'erase' ? eraserSVG() : (isTurn(t) ? turnSVG(t) : arrowSVG(DIRS[t].rot)); }
+  function toolIcon(t){ return t === 'erase' ? eraserSVG() : (isTurn(t) ? turnSVG(curvePose(t)) : arrowSVG(DIRS[t].rot)); }
   function paintArrow(a, d, inH){
     var turn = isTurn(d), pw = a.querySelector('.pw'), kind = turn ? 'turn' : 'str';
     if(a.dataset.kind !== kind){ pw.innerHTML = turn ? turnSVG() : arrowSVG(); a.dataset.kind = kind; }
-    var h = turn ? (inH || 'up') : d, out = turn ? turnDir(h, d) : d;
-    a.style.setProperty('--rot', DIRS[h].rot + 'deg');
-    a.style.setProperty('--flip', d === 'tl' ? -1 : 1);
-    a.style.setProperty('--tx', DIRS[out].tx);
-    a.style.setProperty('--ty', DIRS[out].ty);
+    var pose = turn ? curvePose(d, inH) : { rot: DIRS[d].rot, flip: 1, out: d };
+    a.style.setProperty('--rot', pose.rot + 'deg');
+    a.style.setProperty('--flip', pose.flip);
+    a.style.setProperty('--tx', DIRS[pose.out].tx);
+    a.style.setProperty('--ty', DIRS[pose.out].ty);
   }
+
   var COLORS = [['#C08A5C','#6B4529'], ['#AEB4BC','#5F656D'], ['#F4EFE6','#9C8F7B']];
 
   // cheese:[fila,col]  walls:[[fila,col]]  mice:[[fila,col,mirada 0↑ 1→ 2↓ 3←]]
@@ -900,7 +924,7 @@
     if(!a) return;
     var d = S.arrows[k];
     el.classList.toggle('has-arrow', !!d);
-    if(d) paintArrow(a, d, S.arr && S.arr[k]);
+    if(d) paintArrow(a, d, (S.arr && S.arr[k]) || neighborIn(S.lvl, S.arrows, r, c));
     el.classList.toggle('under', !!d && mouseAt(r,c) >= 0);
   }
   function renderAll(){
@@ -1082,7 +1106,7 @@
       markReading(m.r, m.c);
       if(!d) return fail('falta', m.r, m.c);
       if(++steps > S.lvl.rows * S.lvl.cols) return fail('vueltas', m.r, m.c);
-      if(isTurn(d)) d = turnDir(headingOf(m.rot), d);   // gira según hacia dónde mira
+      d = exitOf(d);   // curvas: sale hacia donde apunta la punta
       face(m, d);
       var nr = m.r + DIRS[d].dr, nc = m.c + DIRS[d].dc;
       var out = nr < 0 || nc < 0 || nr >= S.lvl.rows || nc >= S.lvl.cols;
@@ -1231,7 +1255,7 @@
      ===================================================== */
   var ROLE = null;          // 'ctl' | 'tv'
   var lastPub = '';
-  var LETTER = { u:'up', r:'right', d:'down', l:'left', L:'tl', R:'tr' };
+  var LETTER = { u:'up', r:'right', d:'down', l:'left', U:'cu', R:'cr', D:'cd', L:'cl' };
 
   // El control manda el estado del juego a la TV
   function publish(){
@@ -1430,7 +1454,7 @@
         var dd = arrows[k];
         el.classList.toggle('has-arrow', !!dd);
         if(dd){
-          paintArrow(a, dd, tvArr[k]);
+          paintArrow(a, dd, tvArr[k] || neighborIn(L, arrows, rr, cc));
           if(prev && prev.arrows[k] !== dd){
             var pw = a.querySelector('.pw');
             pw.classList.remove('pop'); void pw.offsetWidth; pw.classList.add('pop');

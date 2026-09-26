@@ -4,7 +4,7 @@ Juegos de programación con flechas para nivel inicial (Sala de 5). Se juegan en
 
 Al abrir el sitio aparece la lista de juegos para elegir.
 
-**Flechas:** las 4 rectas (arriba, abajo, izquierda, derecha) y 2 de girar en violeta (**↰ girar a la izquierda** y **↱ girar a la derecha**). Con una flecha de girar, el ratón gira según hacia dónde está mirando y avanza un casillero, como los robots de piso. Por eso importa hacia dónde mira el ratón al empezar. En el tablero, la flecha curva se dibuja tal como gira el ratón. Si se pone la otra flecha de girar encima, cambia de lado. Se pueden combinar rectas y de girar.
+**Flechas:** 4 rectas (arriba, abajo, izquierda, derecha) y 4 curvas para doblar en violeta, en las esquinas de la cruz. Todas funcionan igual: el ratón sale hacia donde apunta la punta, mire hacia donde mire. En el tablero la curva se dibuja desde el lado por donde llega el ratón, así el camino siempre se ve continuo (por ejemplo, si baja y dobla a la derecha se ve ↳).
 
 | Juego | Qué trabaja |
 |---|---|
@@ -40,7 +40,7 @@ Requisitos: los dos aparatos con internet (mejor en el mismo Wi-Fi) y un navegad
 1. Subí el archivo del juego (por ejemplo `nuevo.html`, armado sobre la base de `camino.html`) y su ícono.
 2. Dentro del juego, poné `var GAME_ID = 'nuevo';`.
 3. En `juegos.js`, agregá una línea a la lista con `id`, `pagina`, `titulo`, `que`, `icono` y `color`. Aparece solo en la página de inicio, y la TV sabe cambiar a ese juego.
-4. En `sw.js`, agregá los archivos nuevos a la lista y cambiá `VERSION` (por ejemplo `juegos-v6`) para que los aparatos que lo tienen instalado se actualicen.
+4. En `sw.js`, agregá los archivos nuevos a la lista y cambiá `VERSION` (por ejemplo `juegos-v7`) para que los aparatos que lo tienen instalado se actualicen.
 
 ## Archivos
 
